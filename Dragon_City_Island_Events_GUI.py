@@ -92,7 +92,10 @@ class GUI(tk.Tk):
         self.Asset_Versioning = {'Chests':{}}
         for asset in self.data_view['asset_versioning']['chests']:
             self.Asset_Versioning['Chests'][asset['name']] = {'Format':asset['format'],"Version":asset['asset_version']}
-     
+        
+        self.Chests_Desired = []
+        self.Chests_Desired_Names = []
+        
         # GUI = Tk()
         tk.Tk.__init__(self)
         self.GUI_Canvas = tk.Canvas(self, relief = 'raised',bg=self.Preferences[self.Preferences["WindowModeSet"]]["WindowBackground"])
@@ -162,6 +165,8 @@ class GUI(tk.Tk):
         Event_Date_Order_Reverse_Button = tk.Checkbutton(self,text='Reverse order of event dates',variable=self.Event_Order_Tracker,bg=self.Style_Preferences["WidgetBackground"],fg=self.Style_Preferences["WidgetForeground"],selectcolor=self.Style_Preferences["CheckmarkColor"])
         self.Event_Order_Tracker.trace('w',self.Event_Menu_List_Creation)
      
+        self.Non_Basic_Chest_All_Selection_Check = tk.IntVar()
+        self.Non_Basic_Chest_All_Selection_Check.set(1)
         self.Chest_All_Selection_Check = tk.IntVar()
         self.Chest_All_Selection_Check.set(self.Preferences['ChestSelectionStatus'])
         Chest_All_Selection_Button = tk.Checkbutton(self,text='Select All Chests',variable=self.Chest_All_Selection_Check,bg=self.Style_Preferences["WidgetBackground"],fg=self.Style_Preferences["WidgetForeground"],selectcolor=self.Style_Preferences["CheckmarkColor"])
@@ -189,6 +194,7 @@ class GUI(tk.Tk):
         self.Options_Menu = tk.Menu(self.Menu_Bar,tearoff=0)
         self.Options_Menu.add_checkbutton(label="Reverse Order of Event Dates",onvalue=1,offvalue=0,variable=self.Event_Order_Tracker)
         self.Options_Menu.add_checkbutton(label="Select All Chests",onvalue=1,offvalue=0,variable=self.Chest_All_Selection_Check)
+        self.Options_Menu.add_checkbutton(label="Select All Non-Basic Chests",onvalue=1,offvalue=0,variable=self.Non_Basic_Chest_All_Selection_Check)
         self.Menu_Bar.add_cascade(label="Options",menu=self.Options_Menu)
      
         self.config(menu=self.Menu_Bar)
@@ -213,24 +219,6 @@ class GUI(tk.Tk):
 
     def Event_Dates_Box_Selection(self,*args):
         self.Events_Available_String.set(self.Event_Dates_List_Box.get(self.Event_Dates_List_Box.curselection()))
-     
-    # def Import_Localization_Data(self,*args):
-        # Local_JSON = requests.get('http://sp-translations.socialpointgames.com/deploy/dc/ios/prod/dc_ios_en_prod_wetd46pWuR8J5CmS.json').json()
-        # self.Dragon_Info,self.Chest_Ids,self.Dragon_Book_IDs,self.Chest_Information,self.Chest_Tokens_Info = {},{},{},{},{}
-        # for chest in self.data_view['chests']['chests']:
-            # self.Chest_Ids[chest['id']] = {"chest_name_key":chest['chest_name_key'],"img_name":chest['img_name']}
-            # self.Chest_Information[chest['id']] = chest
-            # if 'chest_token' in chest['img_name'] and 'v2' in chest['img_name']:
-                # self.Chest_Tokens_Info[chest['img_name']] = 'Token Chest ('+chest['img_name'].split('v2')[0].split('token')[-1].capitalize()+')'
-        # self.Local_Dict = {}
-        # for x in Local_JSON:
-            # for y in x:
-                # self.Local_Dict[y] = x[y]
-        # for drag in self.data_view['items']:
-            # if drag['group_type'] == 'DRAGON':
-                # self.Dragon_Info[drag['id']] = drag.copy()
-        # for drag in self.data_view['dragon_book']['collection_numbers']:
-            # self.Dragon_Book_IDs[drag['dragon_id']] = drag['number']
 
     def Chest_Naming(self,key):
         name_key,img_name = key['chest_name_key'],key['img_name']
@@ -330,7 +318,15 @@ class GUI(tk.Tk):
             self.Chest_Popup.mainloop()
      
         if self.Chest_All_Selection_Check.get() == 1:
-            self.Data_Processing(self.Chest_ID,self.Chest_Names)
+            if self.Non_Basic_Chest_All_Selection_Check.get() == 1:
+                for count, chest in enumerate(self.Chest_ID):
+                    if chest[0] > 10000:
+                        self.Chests_Desired.append(chest)
+                        self.Chests_Desired_Names.append(self.Chest_Names[count])
+            if self.Non_Basic_Chest_All_Selection_Check == 0:
+                self.Chests_Desired = self.Chest_ID
+                self.Chests_Desired_Names = self.Chest_Names
+            self.Data_Processing()
      
     def Chest_Selected(self,*args):
         self.chest_selection_status_list[args[0]] = (self.chest_selection_status_list[args[0]] + 1 ) % 2
@@ -352,7 +348,8 @@ class GUI(tk.Tk):
                     self.Chests_Desired.append(chest_num)
                 # self.Chests_Desired.append(self.Chest_ID[chests_available])
                 self.Chest_Names_Desired.append(self.Chest_Names[chests_available])
-        self.Data_Processing(self.Chests_Desired,self.Chest_Names_Desired)
+        # self.Data_Processing(self.Chests_Desired,self.Chest_Names_Desired)
+        self.Data_Processing()
     
     def Cancel(self):
         self.Chest_Popup.destroy()
@@ -389,14 +386,14 @@ class GUI(tk.Tk):
         if self.Event_Chosen.get() in ['Grid Island','Fog Island','Fog Island - Quick','Tower Island','Maze Island']:
             self.Gather_Desired_Chests_List()
         else:
-            self.Data_Processing([])
+            self.Data_Processing()
          
     def Data_Processing(self,*args):
         self.GUI_Canvas.itemconfigure(self.Running_Status,state='normal')
         self.update()
-        self.Chests_Desired = args[0]
-        if args[0] != []:
-            self.Chests_Desired_Names = args[1]
+        # self.Chests_Desired = args[0]
+        # if args[0] != []:
+            # self.Chests_Desired_Names = args[1]
         self.Assets_Output = open(self.Output_fP_Start[self.Event_Chosen.get()]+'Assets.txt','w')
         self.Event_fP = self.Output_fP_Start[self.Event_Chosen.get()]
         a_time = time.time()
