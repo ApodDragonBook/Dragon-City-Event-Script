@@ -3,4 +3,4 @@ Changes:
  - Updated main file to current version
  - Updated ReadMe file
  - Created Patch-Notes folder to document changes
- - Removed unnecessary file in Heroic-Races folder
+ - Removed unnecessary file in Tower Island folder
