@@ -1,5 +1,5 @@
 '''
-Version 1.0.1
+Version 1.0.2
 Author: Apod
 '''
 
@@ -35,9 +35,6 @@ def Tower_Event_(Parent):
     Chests_of_Interest_Dict = {}
     for chest_count,chest in enumerate(Chests_of_Interest):
         Chests_of_Interest_Dict[chest] = Chests_of_Interest_Names[chest_count]
-            
-    
-    print(f"Chests of interest: {Chests_of_Interest}\n\nChests of interest names: {Chests_of_Interest_Names}\n\nChests Desired: {Parent.Chests_Desired}\n\nChests Desired Name: {Parent.Chests_Desired_Names}")
 
     for x in Parent.data_view['tower_island']['squares']:
         Draw = False
@@ -54,7 +51,7 @@ def Tower_Event_(Parent):
                 Color_Value = 100
                 Draw = True
             if 'chest' in x['rewards_array'][0]:
-                if x['rewards_array'][0]['chest'] in Parent.Chests_Desired:
+                if x['rewards_array'][0]['chest'] in Chests_of_Interest_Dict:
                     Color_Value = 100
                     Draw = True
         if x['type'] == 'SINGLE_DRAGON_PIECE':
