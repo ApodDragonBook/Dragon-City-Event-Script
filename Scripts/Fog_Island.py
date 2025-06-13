@@ -1,8 +1,8 @@
 '''
 
 Author: Apod
-Version: 1.0.2
-Updated: January 25, 2025
+Version: 1.0.3
+Updated: June 13, 2025
 
 '''
 
@@ -28,12 +28,14 @@ def Fog_Event_(Parent):
     Parent.Assets_Output.write(f"tid name: {Fog_Event['tid_name']}\nanalytic id: {Fog_Event['analytics_id']}\nzip filepath:{Asset_Zip}\ncanvas url: {Fog_Event['canvas_assets_url']}\nbackground: {Fog_Event['background_plist']}\nforegound: {Fog_Event['foregrounds_plists']}")
     Parent.Assets_Output.close()
     Missing_Images_filePath = Parent.Event_fP+"Missing_Images.txt"
+    Location_FilePath = Parent.Event_fP+"Placement_Locatiins.txt"
+    Location_File = open(Location_FilePath,'w')
     
     Temp_fP = Parent.Event_fP+'Temp.png'
     Temp_Default_fP = '/'.join(Parent.Event_fP.split('/')[:-2])+'/Temp_Default.png'
     Default_Icon = np.copy(np.asarray(PIL.Image.open(Temp_Default_fP)))
     Icon_Sizing = (60,60)
-    Fog_Rewards = {'CHEST':{},'DRAGON_PIECE':{}}
+    Fog_Rewards = {'CHEST':{},'DRAGON_PIECE':{},"Rewards":[]}
     Images_Downloaded = {}
     Chests_of_Interest = []
     for chest in Parent.Chests_Desired:
@@ -49,7 +51,21 @@ def Fog_Event_(Parent):
                 Chests_of_Interest_Names.append(chest_name)
         else:
             Chests_of_Interest_Names.append(chest_name)
-
+    
+    Dragon_Reward_Dict = {}
+    for drag_count,drag in enumerate(Fog["rewards"]):
+        Dragon_Reward_Dict[drag['id']] = drag_count
+    Dragon_Rewards_Temp = []
+    for drag_counter in range(len(Fog["rewards"])):
+        for drag in Fog["rewards"]:
+            if drag['id'] == drag_counter+1:
+                Dragon_Rewards_Temp.append(drag)
+    # print(Fog["rewards"])
+    Fog["rewards"] = Dragon_Rewards_Temp
+    # print(Fog["rewards"])
+    
+    # print(Dragon_Reward_Dict)
+    # print(Fog['rewards'])
     # print(1,time.perf_counter()-starting_time)
     # 1, pull data from asset_versioning
     # 2, in there you will find a chests section
@@ -59,8 +75,10 @@ def Fog_Event_(Parent):
     # So it's (url) + "basic_" + chest name from config
     # Spine value other than 1 appends corresponding letter "_b" for 2, etc.
     for grid in Fog['squares']:
-        
+        grid_id = ''
+        dragon_url = ''
         if grid['type'] == 'CHEST':
+            grid_id = grid['type_id']
             if not grid['type_id'] in Fog_Rewards['CHEST']:
                 Chest_Name_Spine_Conditional_Front = ""
                 Chest_Name_Spine_Conditional_Back = ""
@@ -71,6 +89,7 @@ def Fog_Event_(Parent):
                     if Parent.Asset_Versioning['Chests'][Chest_Name]['Version'] != 1:
                         Chest_Name_Spine_Conditional_Back = "_"+string.ascii_lowercase[Parent.Asset_Versioning['Chests'][Chest_Name]['Version']]
                 Chest_Image_Link = Parent.Image_Formats[grid['type']]+Chest_Name_Spine_Conditional_Front+Chest_Name+Chest_Name_Spine_Conditional_Back+".png"
+                Location_File.write(f"Chest Link: {Chest_Image_Link}\n")
                 try:
                     urllib.request.urlretrieve(Chest_Image_Link,Temp_fP)
                 except urllib.request.HTTPError:
@@ -91,13 +110,37 @@ def Fog_Event_(Parent):
                 array_temp_transparency = np.argwhere(array_temp[:,:,3]==0)
                 for z in array_temp_transparency:
                     out_array_temp[z[0],z[1]] = (255,255,255,255)
-                Fog_Rewards['CHEST'][grid['type_id']] = PIL.Image.fromarray(cv2.resize(out_array_temp[:,:,:-1],dsize=Icon_Sizing,interpolation=cv2.INTER_CUBIC))
+                Fog_Rewards['CHEST'][grid['type_id']] = PIL.Image.fromarray(np.asarray(cv2.resize(out_array_temp[:,:,:-1],dsize=Icon_Sizing,interpolation=cv2.INTER_CUBIC)))
         if grid['type'] == 'DRAGON_PIECE':
-            if not grid['reward_id'] in Fog_Rewards['DRAGON_PIECE']:
-                urllib.request.urlretrieve("https://dca-static-s1.socialpointgames.com/static/dragoncity/mobile/ui/dragons/HD/thumb_"+Parent.Dragon_Info[Fog['rewards'][grid['reward_id']-1]['reward_id']]['img_name_mobile']+'_3.png',Temp_fP)
-                array_temp = np.asarray(PIL.Image.open(Temp_fP))
-                Fog_Rewards['DRAGON_PIECE'][grid['reward_id']] = PIL.Image.fromarray(cv2.resize(array_temp,dsize=Icon_Sizing,interpolation=cv2.INTER_CUBIC))
+            grid_id = Dragon_Reward_Dict[grid['reward_id']]
+            if not grid_id in Fog_Rewards['DRAGON_PIECE']:
+                dragon_url = "https://dca-static-s1.socialpointgames.com/static/dragoncity/mobile/ui/dragons/HD/thumb_"+Parent.Dragon_Info[Fog['rewards'][grid['reward_id']-1]['reward_id']]['img_name_mobile']+'_3.png'
+                urllib.request.urlretrieve(dragon_url,Temp_fP)
+                array_temp = np.copy(np.asarray(PIL.Image.open(Temp_fP)))
+                
+                PIL.Image.fromarray(Default_Icon).save(Temp_fP)
+                for x in range(array_temp.shape[0]):
+                    for y in range(array_temp.shape[1]):
+                        if array_temp[y,x,3] != 255:
+                            array_temp[y,x,:] = [255,255,255,255]
+                out_array_temp = np.copy(array_temp)
+                array_temp_transparency = np.argwhere(array_temp[:,:,3]==0)
+                for z in array_temp_transparency:
+                    out_array_temp[z[0],z[1]] = (255,255,255,255)
+                    
+                # print(Dragon_Reward_Dict[grid['reward_id']])
+                Fog_Rewards['DRAGON_PIECE'][grid_id] = {"image":PIL.Image.fromarray(np.asarray(cv2.resize(out_array_temp,dsize=Icon_Sizing,interpolation=cv2.INTER_CUBIC))),"url":dragon_url}
+                Fog_Rewards["Rewards"].append(grid_id)
+                Location_File.write(f"Dragon Link: {dragon_url}\n")
+        Location_File.write(f"x: {grid['x']}, y: {grid['y']}, type: {grid['type']}, id: {grid_id}\n")
+        if not dragon_url == '':
+            Location_File.write(f"    dragon url: {dragon_url}\n")
     
+    Location_File.write("\n\n\n")
+    Location_File.write(f"{Fog_Rewards}\n\n")
+    
+    #for reward_dragon in Fog['rewards']:
+    #    Fog_Rewards["Rewards"][reward_dragon['id']] = reward_dragon
     # print(2,time.perf_counter()-starting_time)
     # print(Parent.Chests_Desired)
     for x in Fog['squares']:
@@ -189,23 +232,36 @@ def Fog_Event_(Parent):
         Fog_Image_Dragons_Visual.text((x_placement+10,y_placement+75),Cost_Text,fill=Fill_Color,font=Font_Used)
         Fog_Image_Chests_Visual.text((x_placement+10,y_placement+75),Cost_Text,fill=Fill_Color,font=Font_Used)
         Fog_Image_Dragons_and_Chests_Visual.text((x_placement+10,y_placement+75),Cost_Text,fill=Fill_Color,font=Font_Used)
-        if Chest_Dragon_Identifier != "":
-            #print(f"{Square}\n  {Square['type']}\n  {Chest_Dragon_Identifier}\n\n")
-            Fog_Board_Visual.paste(Fog_Rewards[Square['type']][Chest_Dragon_Identifier],(x_placement+15,y_placement+15))
+        if Chest_Dragon_Identifier != "" and Square['type'] != 'DRAGON_PIECE':
+            # print(f"{Square}\n  {Square['type']}\n  {Chest_Dragon_Identifier}\n    {Fog_Rewards[Square['type']]}\n\n")
+            Chest_Icon = Fog_Rewards[Square['type']][Chest_Dragon_Identifier]
+            Fog_Board_Visual.paste(Chest_Icon,(x_placement+15,y_placement+15))
         
         if Square['type'] == 'CHEST':
             if Square['type_id'] in Chests_of_Interest:
                 if Chest_Dragon_Identifier != "":
-                    Fog_Board_Chests_Visual.paste(Fog_Rewards[Square['type']][Chest_Dragon_Identifier],(x_placement+15,y_placement+15))
-                    Fog_Board_Dragons_and_Chests_Visual.paste(Fog_Rewards[Square['type']][Chest_Dragon_Identifier],(x_placement+15,y_placement+15))
-        
+                    Chest_Icon = Fog_Rewards[Square['type']][Chest_Dragon_Identifier]
+                    Fog_Board_Visual.paste(Chest_Icon,(x_placement+15,y_placement+15))
+                    Fog_Board_Chests_Visual.paste(Chest_Icon,box=(x_placement+15,y_placement+15))
+                    Fog_Board_Dragons_and_Chests_Visual.paste(Chest_Icon,box=(x_placement+15,y_placement+15))
+                    
         if Square['type'] == 'DRAGON_PIECE':
             if Chest_Dragon_Identifier != "":
-                Fog_Board_Dragons_Visual.paste(Fog_Rewards[Square['type']][Chest_Dragon_Identifier],(x_placement+15,y_placement+15))
-                Fog_Board_Dragons_and_Chests_Visual.paste(Fog_Rewards[Square['type']][Chest_Dragon_Identifier],(x_placement+15,y_placement+15))
+                Dragon_Icon = Fog_Rewards[Square['type']][Dragon_Reward_Dict[Chest_Dragon_Identifier]]['image']
+                Dragon_URL = Fog_Rewards[Square['type']][Dragon_Reward_Dict[Chest_Dragon_Identifier]]['url']
+                # print(Chest_Dragon_Identifier)
+                # print(Fog_Rewards["Rewards"])
+                # print(Dragon_URL)
+                #print(Fog_Rewards[Square['type']][Chest_Dragon_Identifier])
+                Fog_Board_Visual.paste(Dragon_Icon,(x_placement+15,y_placement+15))
+                Fog_Board_Dragons_Visual.paste(Dragon_Icon,box=(x_placement+15,y_placement+15))
+                Fog_Board_Dragons_and_Chests_Visual.paste(Dragon_Icon,box=(x_placement+15,y_placement+15))
+                Location_File.write(f"identifier: {Chest_Dragon_Identifier}, Output: {Fog_Rewards[Square['type']][Dragon_Reward_Dict[Chest_Dragon_Identifier]]}\n")
+        
         
         worksheet.write(14-Square['y'],Square['x'],Square['claim_cost'])
     
+    Location_File.close()
     # print(5,time.perf_counter()-starting_time)
     Dragon_Key_File = open(Parent.Event_fP+'Dragon_and_Chest_Board_Number_Key.txt','w')
     Dragon_Key_File.write('Dragon Piece Key\n')
