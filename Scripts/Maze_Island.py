@@ -1,3 +1,11 @@
+'''
+
+Author: Apod
+Version: 1.0.1
+Updated: Sept 24, 2025
+
+'''
+
 import time
 import numpy as np
 import xlsxwriter
@@ -13,20 +21,31 @@ def Light_v_Dark(r,g,b):
     
     return Text_Color
 
+def Grab_Chest_Images(chest_info):
+    
+    return Chest_Images
+    
+def Shrink_Image_Size(starting_image):
+    return PIL.Image.fromarray(np.asarray(cv2.resize(starting_image[:,:,:-1],dsize=(20,20),interpolation=cv2.INTER_CUBIC)))
+
 def Maze_Event_(Parent):
     Maze = Parent.data_view['maze_island']
     Islands = Maze['islands']
     Paths = Maze['paths']
-    Maze_Dictionary = {'Nodes':{},'Paths':{},'Rewards':{}}
+    Maze_Event = Islands[Parent.event_number]
+    Maze_Dictionary = {'Nodes':{},'Paths':{},'Rewards':{},'Current_Rewards':{}}
+    for pathing in Paths:
+        Maze_Dictionary['Paths'][pathing['id']] = pathing
     for node in Maze['nodes']:
         Maze_Dictionary['Nodes'][node['id']] = node
     for rewards in Maze['rewards']:
         Maze_Dictionary['Rewards'][rewards['id']] = rewards['reward'][0]
-    for pathing in Paths:
-        Maze_Dictionary['Paths'][pathing['id']] = pathing
+    for Event_Path in Maze_Event['paths']:
+        for Event_Node in Maze_Dictionary['Paths'][Event_Path]['nodes']:
+            if 'reward_id' in Maze_Dictionary['Nodes'][Event_Node]:
+                Maze_Dictionary['Current_Rewards'][Maze_Dictionary['Nodes'][Event_Node]['reward_id']] = Maze_Dictionary['Rewards'][Maze_Dictionary['Nodes'][Event_Node]['reward_id']]
     
     
-    Maze_Event = Islands[Parent.event_number]
     
     colors_used = []
     for path_given in Maze_Event['paths']:
@@ -65,10 +84,18 @@ def Maze_Event_(Parent):
         counting = 0
         for path in Paths:
             if path_given == path['id']:
-                Color_Formatter = workbook.add_format()
-                Color_Formatter.set_bg_color(rgb_to_hex(colors_used[Track_Color][0],colors_used[Track_Color][1],colors_used[Track_Color][2]))
                 Text_Color = Light_v_Dark(colors_used[Track_Color][0],colors_used[Track_Color][1],colors_used[Track_Color][2])
-                Color_Formatter.set_font_color(rgb_to_hex(Text_Color,Text_Color,Text_Color))
+                Color_Formatter = workbook.add_format(
+                    {
+                        'bg_color':rgb_to_hex(colors_used[Track_Color][0],colors_used[Track_Color][1],colors_used[Track_Color][2]),
+                        'font_color':rgb_to_hex(Text_Color,Text_Color,Text_Color),
+                        'align':'right'
+                    })
+                # Color_Formatter = workbook.add_format()
+                # Color_Formatter.set_bg_color(rgb_to_hex(colors_used[Track_Color][0],colors_used[Track_Color][1],colors_used[Track_Color][2]))
+                # Text_Color = Light_v_Dark(colors_used[Track_Color][0],colors_used[Track_Color][1],colors_used[Track_Color][2])
+                # Color_Formatter.set_font_color(rgb_to_hex(Text_Color,Text_Color,Text_Color))
+                # Color_Formatter.set_align('right')
                 Color_Formatting.append(Color_Formatter)
                 Track_Color+=1
                 path_numbers.append(counting)
@@ -255,9 +282,12 @@ def Maze_Event_(Parent):
                 
                 Node_Tracker+=1
             if Spreadsheet_Text_Color_Check:
+                # Color_Right_Format = workbook.add_format()
+                # Color_Right_Format.set_bg_color(Spreadsheet_Text_Color)
+                # Color_Right_Format.set_align('right')
                 ws1.write(Spreadsheet_Text_X,Spreadsheet_Text_Y,Spreadsheet_Text,Spreadsheet_Text_Color)
             if not Spreadsheet_Text_Color_Check:
-                ws1.write(Spreadsheet_Text_X,Spreadsheet_Text_Y,Spreadsheet_Text)
+                ws1.write(Spreadsheet_Text_X,Spreadsheet_Text_Y,Spreadsheet_Text,Spreadsheet_Text_Color)
             Phrase+='\n'
             Total_Path_Data_Double_Temp.append(Video_Ad_Double)
                  
