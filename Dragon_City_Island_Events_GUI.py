@@ -1,10 +1,34 @@
+'''
+
+Author: Apod
+Version: 1.0.3
+Updated: Sept 24, 2025
+
+'''
+
 import json
+import sys
+
+Configuration = json.load(open('Configuration.json'))
+if Configuration['Module_Onboarding_Check'] == 0:
+    print('Initializing Python module verification')
+    from Scripts.Install_Required_Mods import Module_Verification
+    
+    Modules_Missing = Module_Verification()
+    
+    if Modules_Missing != 0:
+        print('Stopping script, please install above modules to continue.')
+        sys.exit()
+    else:
+        Configuration['Module_Onboarding_Check'] = 1
+        json.dump(Configuration,open('Configuration.json','w'))
+
+
 import time
 import requests
 import os
 from os.path import isdir
 import numpy as np
-import sys
 import PIL.Image,PIL.ImageDraw,PIL.ImageFont
 import tkinter as tk
 from tkinter import ttk
@@ -17,6 +41,7 @@ from Scripts.Maze_Island import Maze_Event_
 from Scripts.Puzzle_Island import Puzzle_Event_
 from Scripts.Runner_Island import Runner_Event_
 from Scripts.Tower_Island import Tower_Event_
+#from Scripts.Chest_Information import Chest_Data
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -131,6 +156,9 @@ class GUI(tk.Tk):
         self.Event_Dates_List_Box.pack(side=tk.LEFT)
         self.Event_Scrollbar.config(command=self.Event_Dates_List_Box.yview)
         self.Events_Listed = 0
+        self.Assets_Output = ""
+        self.Event_fP = ""
+        self.Change_Mission_Name_Dict = {'food':'Collect Food','gold':'Collect Gold','feed':'Feed Your Dragons','hatch':'Hatch Dragons','breed':'Breed Dragons','pvp':'League','arena':'Arena'}
         
         self.asset_zip_fP = ['/mobile/ui/','/HD/dxt5/']
      
@@ -140,7 +168,6 @@ class GUI(tk.Tk):
         Events_Available_Label = tk.Label(self,text='Events Available',bg=self.Style_Preferences["WindowBackground"],fg=self.Style_Preferences["WindowForeground"])
         self.Events_Available_String = tk.StringVar()
         self.Events_Available_String.set('Select Event Date [Start date - End date]')
-        # self.Events_Available_String.set(self.Event_Dates_List_Box.get(0))
      
         self.style = ttk.Style()
         self.style.theme_use('alt')
@@ -235,9 +262,9 @@ class GUI(tk.Tk):
         self.Chest_List = []
         if self.Event_Chosen.get() == 'Maze Island':
             self.Maze_Colors,self.Maze_Dictionary = Maze_Event_(self)
-            for reward in self.Maze_Dictionary['Rewards']:
-                if 'chest' in self.Maze_Dictionary['Rewards'][reward]:
-                    self.Chest_List.append(self.Maze_Dictionary['Rewards'][reward]['chest'])
+            for reward in self.Maze_Dictionary['Current_Rewards']:
+                if 'chest' in self.Maze_Dictionary['Current_Rewards'][reward]:
+                    self.Chest_List.append(self.Maze_Dictionary['Current_Rewards'][reward]['chest'])
                     Necessary = True
             self.Maze_Color_Check_Status = True
         if self.Event_Chosen.get() == 'Grid Island':
@@ -283,8 +310,6 @@ class GUI(tk.Tk):
 
         self.Chest_ID = []
         for x in Chest_ID_Temp:
-            # for chest in Chest_ID_Temp[x]['Chest IDs']:
-                # self.Chest_ID.append(chest)
             self.Chest_ID.append(Chest_ID_Temp[x]['Chest IDs'])
 
         if self.Chest_All_Selection_Check.get() != 1 and Necessary:
@@ -297,7 +322,9 @@ class GUI(tk.Tk):
             for chest_option in range(len(self.Chest_Names)):
                 self.chest_selection_status_list.append(0)
                 self.Chest_Checkbuttons.append(self.New_Checkbutton(chest_option))
-             
+            
+            Chest_Columns = np.round(len(self.Chest_Names)/10,0)
+            
             self.Continue_Button = tk.Button(self.Chest_Popup,text='Continue With Selected Chests',command=self.Finish)
             Continue_Button_Canvas = self.Chest_Canvas.create_window(200,375,window=self.Continue_Button)
             self.Cancel_Button = tk.Button(self.Chest_Popup,text='Cancel',command=self.Cancel)
@@ -308,11 +335,11 @@ class GUI(tk.Tk):
             Clear_All_Button_Canvas = self.Chest_Canvas.create_window(500,375,window=self.Clear_All_Button)
      
             self.Chest_Popup.title("Select Chests from the Event")
-            w1 = 600 # width for the Tk Chest_Popup
+            w1 = 200 * Chest_Columns # width for the Tk Chest_Popup
             h1 = 400 # height for the Tk root
             ws1 = self.Chest_Popup.winfo_screenwidth() # width of the screen
             hs1 = self.Chest_Popup.winfo_screenheight() # height of the screen
-            x1 = (2*ws1/3) - (w1/2)
+            x1 = (w1/4)
             y1 = (hs1/2) - (h1/2)
             self.Chest_Popup.geometry('%dx%d+%d+%d' % (w1, h1, x1, y1))
             self.Chest_Popup.mainloop()
@@ -367,7 +394,6 @@ class GUI(tk.Tk):
          
 
     def Event_Processing(self,*args):
-        self.Change_Mission_Name_Dict = {'food':'Collect Food','gold':'Collect Gold','feed':'Feed Your Dragons','hatch':'Hatch Dragons','breed':'Breed Dragons','pvp':'League','arena':'Arena'}
      
         self.Initial_fP = os.getcwd()
         self.Output_fP_Start = {'Maze Island':self.Initial_fP+'/Maze_Island/','Heroic Race':self.Initial_fP+'/Heroic_Races/','Grid Island':self.Initial_fP+'/Grid_Island/','Runner Island':self.Initial_fP+'/Runner_Island/','Puzzle Island':self.Initial_fP+'/Puzzle_Island/','Puzzle Island Draw':self.Initial_fP+'/Puzzle_Island/','Fog Island':self.Initial_fP+'/Fog_Island/','Tower Island':self.Initial_fP+'/Tower_Island/','Fog Island - Quick':self.Initial_fP+'/Fog_Island/'}
@@ -404,6 +430,7 @@ class GUI(tk.Tk):
         #-----------------------------------------------------------------------------------------------
      
         if self.Event_Chosen.get() in ['Fog Island','Fog Island - Quick']:
+            from Scripts.Fog_Island import Fog_Event_
             Fog_Event_(self)
      
         if self.Event_Chosen.get() == 'Grid Island':
@@ -502,7 +529,8 @@ class GUI(tk.Tk):
         save_time = time.time()
         json.dump(self.data_view,open('Config.json','w'))
         print(f'Successfully saved config file after {np.round(time.time()-save_time,3)} seconds')
-     
+
 if __name__ == "__main__":
     GUI_Start = GUI()
     GUI_Start.mainloop()
+    
