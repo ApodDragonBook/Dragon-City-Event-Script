@@ -191,7 +191,10 @@ def Maze_Event_(Parent):
                     Phrase+=Node_Cost+' perk: '+str(key2['reward'][0]['perks'][0]['quantity'])+' of '+Parent.Perks[key2['reward'][0]['perks'][0]['id']]
                 if 'b' in key2['reward'][0]:
                     found = 1
-                    building_name = Parent.Local_Dict['_'.join(['tid','building',str(key2['reward'][0]['b']),'name'])]
+                    if isinstance(key2['reward'][0]['b'],list)
+                        building_name = Parent.Local_Dict['_'.join(['tid','building',str(key2['reward'][0]['b'][0]),'name'])]
+                    else:
+                        building_name = Parent.Local_Dict['_'.join(['tid','building',str(key2['reward'][0]['b']),'name'])]
                     Phrase+=Node_Cost+' item: '+building_name
                 if bool(Video_Ad_Double):
                     Phrase += ' [Video Double: Yes]'
@@ -333,3 +336,4 @@ def Maze_Event_(Parent):
     ws1.merge_range(0,0,0,len(Total_Path_Data),'Insert Event Name ('+str(Coins)+' coins)',merge_format)
 
     workbook.close()
+
