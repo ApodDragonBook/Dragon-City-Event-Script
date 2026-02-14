@@ -1,8 +1,8 @@
 '''
 
 Author: Apod
-Version: 1.0.1
-Updated: Sept 24, 2025
+Version: 1.0.1a
+Updated: Feb 14, 2026
 
 '''
 
@@ -336,4 +336,5 @@ def Maze_Event_(Parent):
     ws1.merge_range(0,0,0,len(Total_Path_Data),'Insert Event Name ('+str(Coins)+' coins)',merge_format)
 
     workbook.close()
+
 
