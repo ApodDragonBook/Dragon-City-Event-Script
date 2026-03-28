@@ -1,8 +1,8 @@
 '''
 
 Author: Apod
-Version: 1.0.1a
-Updated: Feb 14, 2026
+Version: 1.0.2
+Updated: March 28, 2026
 
 '''
 
@@ -18,13 +18,13 @@ def Light_v_Dark(r,g,b):
         Text_Color = 255
     if (.299*r**2+.587*g**2+.114*b**2)>=(127**2):
         Text_Color = 0
-    
+
     return Text_Color
 
 def Grab_Chest_Images(chest_info):
-    
+
     return Chest_Images
-    
+
 def Shrink_Image_Size(starting_image):
     return PIL.Image.fromarray(np.asarray(cv2.resize(starting_image[:,:,:-1],dsize=(20,20),interpolation=cv2.INTER_CUBIC)))
 
@@ -44,18 +44,18 @@ def Maze_Event_(Parent):
         for Event_Node in Maze_Dictionary['Paths'][Event_Path]['nodes']:
             if 'reward_id' in Maze_Dictionary['Nodes'][Event_Node]:
                 Maze_Dictionary['Current_Rewards'][Maze_Dictionary['Nodes'][Event_Node]['reward_id']] = Maze_Dictionary['Rewards'][Maze_Dictionary['Nodes'][Event_Node]['reward_id']]
-    
-    
-    
+
+
+
     colors_used = []
     for path_given in Maze_Event['paths']:
         for path in Paths:
             if path_given == path['id']:
                 colors_used.append(path['color'])
-    
+
     if not Parent.Maze_Color_Check_Status:
         return colors_used, Maze_Dictionary
-    
+
     Zip_fileName = Maze_Event['zip_file'].split('.')[0].split('/')[-1]
     Asset_Zip = Parent.asset_zip_fP[0]+'maze_island'+Parent.asset_zip_fP[1]+Zip_fileName+'.zip'
     Parent.Assets_Output.write(f"tid name:{Maze_Event['tid_name']}\nzip filepath:{Asset_Zip}\n")
@@ -65,7 +65,7 @@ def Maze_Event_(Parent):
     Event_Start_Date = time.ctime(Maze_Event['availability']['from'])
     Output_fP_Format = Parent.Event_fP+Parent.Event_fP.split('/')[-2].split(' ')[0]+' Maze Island Starting - '+str(int(Event_Start_Date[8:10]))+' '+Event_Start_Date[4:7]+' '+Event_Start_Date[-4:]
     file = open(Output_fP_Format+'.txt','w')
-    
+
     workbook = xlsxwriter.Workbook(Output_fP_Format+'.xlsx')
     ws1 = workbook.add_worksheet()
     ws1.write(1,0,'Dragons')
@@ -75,7 +75,7 @@ def Maze_Event_(Parent):
     Total_Path_Data_Double = []
     Longest_Path,Locked_Path_Count,Timed_Path_Count = [],0,0
     Path_Information = []
-    
+
     path_numbers = []
     Path_Dragons = []
     Color_Formatting = []
@@ -101,7 +101,7 @@ def Maze_Event_(Parent):
                 path_numbers.append(counting)
                 Path_Dragons.append(' '.join(Parent.Local_Dict['tid_unit_'+str(path['dragon_type'])+'_name'].split(" Dragon")))
             counting+=1
-    
+
     del Path_Dragons[0] #Don't need the first entry, used for the naming the keys in the spreadsheet and the first dragon does not require a key
 
     Dragon_Output_Tracker = 0
@@ -148,21 +148,22 @@ def Maze_Event_(Parent):
                 ws1.write(2,Path_Tracker,Rarity+'# '+str(Dragons_ID),Color_Format)
                 if len(Rarity+'# '+str(Dragons_ID))+1>Width_Check:
                     Width_Check=len(Rarity+'# '+str(Dragons_ID))+2
-             
+
         starting_node = 0
         total_cost = 0
         total_path_costs = [0 for _ in path_numbers]
         key_path_costs = [0 for _ in path_numbers]
         locked_by_key_check = [0 for _ in path_numbers]
         Total_Path_Data_Double_Temp = []
-     
+
         if not first_path and prior_path_key:
             ws1.write(3,Path_Tracker,'Locked')
         Phrase = ''
         Reward_Double_List = []
         for reward_spot in Parent.data_view['maze_island']['rewards']:
-            if 'double_with_video_ad' in reward_spot:
-                Reward_Double_List.append(reward_spot['id'])
+            if 'double_with_video_ad' in reward_spot and str(Maze_Event['id']) in str(reward_spot['id']):
+                if reward_spot['double_with_video_ad'] == 1:
+                    Reward_Double_List.append(reward_spot['id'])
         for key in Paths[path_viewing]['nodes']:
             key2 = Maze_Dictionary['Nodes'][key]
             enemy_list = []
@@ -191,11 +192,24 @@ def Maze_Event_(Parent):
                     Phrase+=Node_Cost+' perk: '+str(key2['reward'][0]['perks'][0]['quantity'])+' of '+Parent.Perks[key2['reward'][0]['perks'][0]['id']]
                 if 'b' in key2['reward'][0]:
                     found = 1
-                    if isinstance(key2['reward'][0]['b'],list)
-                        building_name = Parent.Local_Dict['_'.join(['tid','building',str(key2['reward'][0]['b'][0]),'name'])]
+                    if isinstance(key2['reward'][0]['b'],list):
+                        building_name_key = key2['reward'][0]['b'][0]
                     else:
-                        building_name = Parent.Local_Dict['_'.join(['tid','building',str(key2['reward'][0]['b']),'name'])]
+                        building_name_key = key2['reward'][0]['b']
+                    
+                    try:
+                        building_name = Parent.Local_Dict['_'.join(['tid','building',str(building_name_key),'name'])]
+                    except KeyError:
+                        building_name = Parent.Item_List[building_name_key]['name']
+                    else:
+                        pass
+                    
                     Phrase+=Node_Cost+' item: '+building_name
+                for xx in key2['reward'][0]:
+                    if "pet_food_pack" in xx:
+                        found = 1
+                        Phrase+=Node_Cost+' Pet Food: '+Parent.Pet_Food_Items[xx]
+                        
                 if bool(Video_Ad_Double):
                     Phrase += ' [Video Double: Yes]'
             if 'encounter' in key2:
@@ -282,7 +296,7 @@ def Maze_Event_(Parent):
                     Spreadsheet_Text_Y = Path_Tracker
                 if bool(Video_Ad_Double):
                     Spreadsheet_Text = f"{Spreadsheet_Text} (2x)"
-                
+
                 Node_Tracker+=1
             if Spreadsheet_Text_Color_Check:
                 # Color_Right_Format = workbook.add_format()
@@ -293,15 +307,15 @@ def Maze_Event_(Parent):
                 ws1.write(Spreadsheet_Text_X,Spreadsheet_Text_Y,Spreadsheet_Text,Spreadsheet_Text_Color)
             Phrase+='\n'
             Total_Path_Data_Double_Temp.append(Video_Ad_Double)
-                 
-                 
-                 
+
+
+
         file.write(Phrase)
-     
-     
+
+
         Total_Path_Data.append([total_cost,key_path_cost])
         Total_Path_Data_Double.append(Total_Path_Data_Double_Temp)
-     
+
         if not Key_Found:
             prior_path_key = False
             key_path_cost = 0
@@ -330,11 +344,9 @@ def Maze_Event_(Parent):
             Text_7 = Total_Path_Data[x][0]
         ws1.write(Longest_Path+6,x+1,Text_6)
         ws1.write(Longest_Path+7,x+1,Text_7)
-     
+
     merge_format = workbook.add_format({'bold':2,'align':'center'})
     merge_format.set_bg_color('#aaaaaa')
     ws1.merge_range(0,0,0,len(Total_Path_Data),'Insert Event Name ('+str(Coins)+' coins)',merge_format)
 
     workbook.close()
-
-
