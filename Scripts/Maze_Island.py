@@ -1,8 +1,8 @@
 '''
 
 Author: Apod
-Version: 1.0.2
-Updated: March 28, 2026
+Version: 1.0.3
+Updated: May 9, 2026
 
 '''
 
@@ -209,6 +209,9 @@ def Maze_Event_(Parent):
                     if "pet_food_pack" in xx:
                         found = 1
                         Phrase+=Node_Cost+' Pet Food: '+Parent.Pet_Food_Items[xx]
+                    if "album_pack" in xx:
+                        found = 1
+                        Phrase+=Node_Cost+' Album Pack: '+Parent.Album_Pack_Items[xx]
                         
                 if bool(Video_Ad_Double):
                     Phrase += ' [Video Double: Yes]'
