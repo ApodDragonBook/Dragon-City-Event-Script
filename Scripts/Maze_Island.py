@@ -212,6 +212,9 @@ def Maze_Event_(Parent):
                     if "album_pack" in xx:
                         found = 1
                         Phrase+=Node_Cost+' Album Pack: '+Parent.Album_Pack_Items[xx]
+                    if 'skin' in xx:
+                        found = 1
+                        Phrase+=Node_Cost+' Skin: '+Parent.Skin_Names[key2['reward'][0][xx]]
                         
                 if bool(Video_Ad_Double):
                     Phrase += ' [Video Double: Yes]'
