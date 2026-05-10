@@ -98,6 +98,10 @@ class GUI(tk.Tk):
         for drag in self.data_view['dragon_book']['collection_numbers']:
             self.Dragon_Book_IDs[drag['dragon_id']] = drag['number']
         
+        self.Skin_Names = {}
+        for skin_check in self.data_view['dragon_skins']['dragon_skins']:
+            self.Skin_Names[skin_check['id']] = self.Local_Dict[skin_check['skin_name_tid']]
+            
         self.Pet_Food_Items = {}
         self.Album_Pack_Items = {}
         for temp_var in self.Local_Dict:
@@ -359,7 +363,7 @@ class GUI(tk.Tk):
                 self.chest_selection_status_list.append(0)
                 self.Chest_Checkbuttons.append(self.New_Checkbutton(chest_option))
             
-            Chest_Columns = np.round(len(self.Chest_Names)/10,0)
+            Chest_Columns = int(len(self.Chest_Names)/10)
             
             self.Continue_Button = tk.Button(self.Chest_Popup,text='Continue With Selected Chests',command=self.Finish)
             Continue_Button_Canvas = self.Chest_Canvas.create_window(95,375,window=self.Continue_Button)
@@ -371,7 +375,7 @@ class GUI(tk.Tk):
             Clear_All_Button_Canvas = self.Chest_Canvas.create_window(370,375,window=self.Clear_All_Button)
      
             self.Chest_Popup.title("Select Chests from the Event")
-            w1 = max(410,200 * Chest_Columns + 10) # width for the Tk Chest_Popup
+            w1 = max(410,200 * (Chest_Columns+1) + 10) # width for the Tk Chest_Popup
             h1 = 400 # height for the Tk root
             ws1 = self.Chest_Popup.winfo_screenwidth() # width of the screen
             hs1 = self.Chest_Popup.winfo_screenheight() # height of the screen
